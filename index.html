@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>粵語配音台 · 普通話節目轉廣東話配音</title>
+<meta name="description" content="本機單頁工具：將普通話 podcast、影片轉成一男一女廣東話配音，附繁體字幕。拖檔、轉錄、翻譯、校對、合成，一條龍喺你部機完成。">
+<meta property="og:title" content="粵語配音台">
+<meta property="og:description" content="普通話節目 → 廣東話配音 + 繁體字幕。本機運行，金鑰唔出你部機。">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+HK:wght@300;400;500;700;900&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* 錄音室調音台：深暖木炭枱面 + 廣播琥珀 + 監聽青 */
+    --console:#1a1614;        /* 枱面深炭 */
+    --console-2:#221d1a;      /* 面板 */
+    --panel:#2b2521;          /* 凸起模組 */
+    --edge:#3a322c;           /* 金屬邊 */
+    --ink:#f3ede4;            /* 主字（暖白）*/
+    --ink-dim:#a99e91;        /* 次字 */
+    --ink-faint:#6f665c;      /* 標籤 */
+    --amber:#ff9d2e;          /* ON AIR 琥珀 */
+    --amber-glow:#ffb457;
+    --teal:#4fd6c4;           /* 監聽青（VU 表）*/
+    --teal-dim:#2b9488;
+    --red:#ff5a4d;            /* 峰值紅 */
+    --hair:rgba(243,237,228,.09);
+    --radius:14px;
+    --mono:'Space Mono',ui-monospace,monospace;
+    --disp:'Space Grotesk','Noto Sans HK',sans-serif;
+    --body:'Noto Sans HK','Space Grotesk',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+  body{
+    background:var(--console);
+    color:var(--ink);
+    font-family:var(--body);
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  /* 枱面有一層極輕微嘅木紋噪點 + 頂部聚光 */
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(120% 80% at 50% -10%, rgba(255,157,46,.10), transparent 55%),
+      radial-gradient(100% 60% at 50% 110%, rgba(79,214,196,.05), transparent 60%);
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+  a{color:inherit}
+
+  /* ── 頂欄 ── */
+  header{position:sticky;top:0;z-index:50;backdrop-filter:blur(12px);
+    background:rgba(26,22,20,.72);border-bottom:1px solid var(--hair)}
+  .bar{max-width:1080px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:16px}
+  .brand{font-family:var(--disp);font-weight:700;letter-spacing:.02em;font-size:18px;display:flex;align-items:center;gap:10px}
+  .onair{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10px;
+    letter-spacing:.18em;color:var(--amber);border:1px solid rgba(255,157,46,.35);
+    padding:4px 9px;border-radius:100px;background:rgba(255,157,46,.06);text-transform:uppercase}
+  .onair .dot{width:7px;height:7px;border-radius:50%;background:var(--amber);
+    box-shadow:0 0 8px var(--amber-glow);animation:blink 2.4s ease-in-out infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+  .nav-sp{flex:1}
+  .nav a{font-size:13.5px;color:var(--ink-dim);text-decoration:none;margin-left:22px;transition:color .2s}
+  .nav a:hover{color:var(--ink)}
+  @media(max-width:640px){.nav{display:none}}
+
+  /* ── HERO ── */
+  .hero{padding:76px 0 52px;text-align:center}
+  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.28em;color:var(--ink-faint);
+    text-transform:uppercase;margin-bottom:26px}
+  h1{font-family:var(--disp);font-weight:900;font-size:clamp(46px,8.5vw,92px);line-height:.98;
+    letter-spacing:-.01em;margin-bottom:8px}
+  h1 .zh{font-family:'Noto Sans HK',sans-serif;font-weight:900;display:block}
+  h1 .en{display:block;font-size:clamp(15px,2.4vw,22px);font-weight:500;letter-spacing:.34em;
+    color:var(--ink-faint);margin-top:20px;text-transform:uppercase}
+  .lede{max-width:620px;margin:30px auto 0;font-size:18px;color:var(--ink-dim);line-height:1.75}
+  .lede b{color:var(--ink);font-weight:500}
+
+  /* 波形：普通話直線 → 廣東話配音 */
+  .console-strip{max-width:760px;margin:44px auto 0;background:var(--console-2);
+    border:1px solid var(--edge);border-radius:var(--radius);padding:20px 22px;
+    box-shadow:0 26px 60px -30px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,255,255,.03)}
+  .track{display:flex;align-items:center;gap:14px;padding:9px 0}
+  .track+.track{border-top:1px solid var(--hair)}
+  .tlabel{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--ink-faint);
+    width:74px;text-align:left;flex-shrink:0;text-transform:uppercase}
+  .tlabel b{display:block;color:var(--ink-dim);font-size:12px;letter-spacing:.04em;margin-top:2px;font-weight:700}
+  .wave{flex:1;height:38px;display:flex;align-items:center;gap:2.5px;overflow:hidden}
+  .wave span{flex:1;background:var(--ink-faint);border-radius:2px;opacity:.5}
+  .wave.src span{background:var(--ink-faint);height:8%}
+  .wave.dub span{background:linear-gradient(var(--teal),var(--teal-dim));
+    box-shadow:0 0 6px rgba(79,214,196,.3);animation:vu 1.7s ease-in-out infinite}
+  @keyframes vu{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+  .arrow-row{display:flex;justify-content:center;padding:4px 0}
+  .arrow-row span{font-family:var(--mono);font-size:11px;color:var(--amber);letter-spacing:.14em}
+
+  .cta-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:40px}
+  .btn{font-family:var(--disp);font-weight:600;font-size:15px;padding:15px 30px;border-radius:11px;
+    text-decoration:none;display:inline-flex;align-items:center;gap:10px;transition:transform .15s,box-shadow .2s;border:1px solid transparent}
+  .btn-main{background:linear-gradient(180deg,var(--amber-glow),var(--amber));color:#231603;
+    box-shadow:0 12px 30px -10px rgba(255,157,46,.5)}
+  .btn-main:hover{transform:translateY(-2px);box-shadow:0 18px 38px -10px rgba(255,157,46,.6)}
+  .btn-ghost{border-color:var(--edge);color:var(--ink-dim);background:var(--panel)}
+  .btn-ghost:hover{color:var(--ink);border-color:var(--ink-faint);transform:translateY(-2px)}
+  .verline{font-family:var(--mono);font-size:12px;color:var(--ink-faint);margin-top:20px;letter-spacing:.04em}
+
+  /* ── 區段標題 ── */
+  section{padding:64px 0;position:relative}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.24em;color:var(--amber);
+    text-transform:uppercase;margin-bottom:14px}
+  h2{font-family:var(--disp);font-weight:700;font-size:clamp(28px,4.5vw,40px);letter-spacing:-.01em;
+    margin-bottom:16px}
+  h2 .zh{font-family:'Noto Sans HK',sans-serif;font-weight:900}
+  .sub{color:var(--ink-dim);font-size:16.5px;max-width:640px;margin-bottom:40px}
+
+  /* ── 訊號鏈（流程）── */
+  .chain{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+  @media(max-width:820px){.chain{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:440px){.chain{grid-template-columns:1fr}}
+  .stage{background:var(--console-2);border:1px solid var(--edge);border-radius:var(--radius);
+    padding:22px 18px;position:relative;overflow:hidden}
+  .stage .no{font-family:var(--mono);font-size:11px;color:var(--ink-faint);letter-spacing:.1em}
+  .stage h3{font-family:'Noto Sans HK',sans-serif;font-size:17px;font-weight:700;margin:12px 0 8px}
+  .stage p{font-size:13.5px;color:var(--ink-dim);line-height:1.65}
+  .stage .led{position:absolute;top:16px;right:16px;width:8px;height:8px;border-radius:50%;
+    background:var(--teal);box-shadow:0 0 8px var(--teal)}
+  .stage:nth-child(2) .led{animation-delay:.3s}
+  .stage:nth-child(3) .led{background:var(--amber);box-shadow:0 0 8px var(--amber)}
+
+  /* ── 功能格 ── */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:820px){.grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:520px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--console-2);border:1px solid var(--edge);border-radius:var(--radius);
+    padding:26px 22px;transition:border-color .2s,transform .2s}
+  .card:hover{border-color:var(--ink-faint);transform:translateY(-3px)}
+  .card .ic{font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--amber);
+    border:1px solid rgba(255,157,46,.28);border-radius:7px;padding:4px 9px;display:inline-block;margin-bottom:16px}
+  .card h3{font-family:'Noto Sans HK',sans-serif;font-size:18px;font-weight:700;margin-bottom:9px}
+  .card p{font-size:14px;color:var(--ink-dim);line-height:1.68}
+
+  /* ── 規格條 ── */
+  .specs{display:flex;flex-wrap:wrap;gap:0;border:1px solid var(--edge);border-radius:var(--radius);
+    overflow:hidden;background:var(--console-2)}
+  .spec{flex:1;min-width:150px;padding:24px 22px;border-right:1px solid var(--hair)}
+  .spec:last-child{border-right:none}
+  @media(max-width:640px){.spec{border-right:none;border-bottom:1px solid var(--hair);min-width:100%}}
+  .spec .k{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--ink-faint);
+    text-transform:uppercase;margin-bottom:8px}
+  .spec .v{font-family:var(--disp);font-size:19px;font-weight:600;color:var(--ink)}
+  .spec .v small{display:block;font-family:var(--body);font-size:13px;font-weight:400;color:var(--ink-dim);margin-top:4px}
+
+  /* ── 下載區 ── */
+  .dl{background:linear-gradient(180deg,var(--console-2),var(--panel));
+    border:1px solid var(--edge);border-radius:20px;padding:48px 40px;text-align:center;
+    box-shadow:0 30px 70px -34px rgba(0,0,0,.8)}
+  .dl h2{margin-bottom:12px}
+  .dl .sub{margin:0 auto 32px}
+  .dl-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:720px;margin:0 auto 36px;text-align:left}
+  @media(max-width:640px){.dl-steps{grid-template-columns:1fr}}
+  .dstep{background:rgba(0,0,0,.22);border:1px solid var(--hair);border-radius:11px;padding:18px}
+  .dstep .n{font-family:var(--mono);font-size:12px;color:var(--amber);letter-spacing:.1em;margin-bottom:8px}
+  .dstep p{font-size:13.5px;color:var(--ink-dim);line-height:1.6}
+  .dstep b{color:var(--ink);font-weight:500}
+  .platforms{font-family:var(--mono);font-size:12px;color:var(--ink-faint);margin-top:22px;letter-spacing:.05em}
+
+  /* ── 需求提示 ── */
+  .req{margin-top:28px;background:rgba(255,157,46,.06);border:1px solid rgba(255,157,46,.22);
+    border-radius:12px;padding:18px 22px;display:flex;gap:14px;align-items:flex-start;text-align:left}
+  .req .tag{font-family:var(--mono);font-size:11px;color:var(--amber);letter-spacing:.1em;flex-shrink:0;
+    border:1px solid rgba(255,157,46,.3);border-radius:6px;padding:3px 8px;margin-top:2px}
+  .req p{font-size:13.5px;color:var(--ink-dim);line-height:1.66}
+  .req b{color:var(--ink);font-weight:500}
+
+  footer{padding:48px 0 60px;border-top:1px solid var(--hair);margin-top:40px;text-align:center}
+  footer p{font-size:13px;color:var(--ink-faint);line-height:1.8}
+  footer a{color:var(--ink-dim);text-decoration:none;border-bottom:1px solid var(--hair)}
+  footer a:hover{color:var(--ink)}
+
+  .fade{opacity:0;transform:translateY(20px);transition:opacity .7s ease,transform .7s ease}
+  .fade.in{opacity:1;transform:none}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="bar">
+    <div class="brand">粵語配音台</div>
+    <span class="onair"><span class="dot"></span>收音中</span>
+    <div class="nav-sp"></div>
+    <nav class="nav">
+      <a href="#chain">運作流程</a>
+      <a href="#features">功能</a>
+      <a href="#download">下載</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="kicker">Mandarin → Cantonese · Local dubbing console</div>
+    <h1>
+      <span class="zh">普通話入</span>
+      <span class="zh">廣東話出</span>
+      <span class="en">Cantonese Dubbing Desk</span>
+    </h1>
+    <p class="lede">將普通話 podcast、訪談、影片，轉成<b>一男一女廣東話配音</b>，附繁體字幕。轉錄、翻譯、校對、合成，一條龍喺<b>你自己部機</b>行晒。</p>
+
+    <!-- 訊號鏈波形 -->
+    <div class="console-strip" aria-hidden="true">
+      <div class="track">
+        <div class="tlabel">IN<b>普通話</b></div>
+        <div class="wave src" id="waveSrc"></div>
+      </div>
+      <div class="arrow-row"><span>↓ 轉錄 · 翻譯 · 合成 ↓</span></div>
+      <div class="track">
+        <div class="tlabel">OUT<b>廣東話</b></div>
+        <div class="wave dub" id="waveDub"></div>
+      </div>
+    </div>
+
+    <div class="cta-row">
+      <a class="btn btn-main" href="#download">↓ 下載程式</a>
+      <a class="btn btn-ghost" href="#chain">睇下點運作</a>
+    </div>
+    <p class="verline" id="verline">最新版本 · build 2026-08-19</p>
+  </div>
+
+  <!-- 訊號鏈 -->
+  <section id="chain">
+    <div class="eyebrow">Signal chain</div>
+    <h2><span class="zh">五個站，一條訊號鏈</span></h2>
+    <p class="sub">同錄音室嘅工序一樣：聲入嚟，逐站處理，最後配音出去。中間留返個校對站俾你把關。</p>
+    <div class="chain">
+      <div class="stage"><span class="led"></span><div class="no">01</div><h3>拖檔入嚟</h3><p>音檔或者影片拖入去。長片會自動切段送去轉錄。</p></div>
+      <div class="stage"><span class="led"></span><div class="no">02</div><h3>轉錄分講者</h3><p>Azure、ElevenLabs、Gemini 三揀一，普通話轉文字兼分開男女講者。</p></div>
+      <div class="stage"><span class="led"></span><div class="no">03</div><h3>翻譯做粵語</h3><p>AI 譯成廣東話口語，唔係硬繃繃嘅書面翻譯。五種語氣可揀。</p></div>
+      <div class="stage"><span class="led"></span><div class="no">04</div><h3>你嚟校對</h3><p>紅黃標記提你邊句未譯、邊句太書面。改啱先落一步。</p></div>
+      <div class="stage"><span class="led"></span><div class="no">05</div><h3>合成配音</h3><p>男女聲分開合成，對齊時間軸。影片仲會燒返繁體字幕。</p></div>
+    </div>
+  </section>
+
+  <!-- 功能 -->
+  <section id="features">
+    <div class="eyebrow">What's on the desk</div>
+    <h2><span class="zh">枱面上有咩</span></h2>
+    <p class="sub">唔係黑盒，每一步都俾你睇到、改到、試到。</p>
+    <div class="grid">
+      <div class="card"><span class="ic">2 VOICES</span><h3>一男一女對話</h3><p>自動分開兩位講者，各配一把粵語聲。逐句可以單獨調換男女、即場試聽。</p></div>
+      <div class="card"><span class="ic">3 ENGINES</span><h3>轉錄引擎任揀</h3><p>Azure 免費夠用、ElevenLabs 時間碼最準、Gemini 用返翻譯個 key。一個掛咗轉第二個。</p></div>
+      <div class="card"><span class="ic">5 TONES</span><h3>五種語氣</h3><p>生動、專業、好奇、溫和、原汁原味。校對頁可以換語氣重譯，唔食轉錄額度。</p></div>
+      <div class="card"><span class="ic">PROOF</span><h3>校對唔係擺設</h3><p>未譯標紅、太書面標黃，頂部有橫額。三成以上未譯會攔住你，唔准靜靜出錯。</p></div>
+      <div class="card"><span class="ic">SUBS</span><h3>繁體字幕</h3><p>影片配音之餘，燒返 Noto Sans CJK 繁體字幕入片。淨要字幕嘅可以匯出 SRT。</p></div>
+      <div class="card"><span class="ic">LOCAL</span><h3>金鑰唔出你部機</h3><p>全部 API key 只存喺你瀏覽器嘅 localStorage，唔會傳去任何第三方伺服器。</p></div>
+    </div>
+  </section>
+
+  <!-- 規格 -->
+  <section>
+    <div class="specs">
+      <div class="spec"><div class="k">輸入</div><div class="v">音檔 / 影片<small>mp3 · m4a · wav · mp4 · mov · webm</small></div></div>
+      <div class="spec"><div class="k">輸出</div><div class="v">粵語配音<small>MP3，影片另出 MP4 + 繁體字幕</small></div></div>
+      <div class="spec"><div class="k">運行</div><div class="v">本機單頁<small>Python 3 + ffmpeg，唔使裝一大堆嘢</small></div></div>
+      <div class="spec"><div class="k">平台</div><div class="v">Win / Mac<small>雙擊啟動器，瀏覽器自動開</small></div></div>
+    </div>
+  </section>
+
+  <!-- 下載 -->
+  <section id="download">
+    <div class="dl">
+      <div class="eyebrow" style="text-align:center">Download</div>
+      <h2><span class="zh">攞返去自己部機行</span></h2>
+      <p class="sub">下載個 zip，解壓,雙擊啟動器就用得。程式喺你部機運行，唔經任何雲端。</p>
+
+      <a class="btn btn-main" id="dlBtn" href="#" style="font-size:16px;padding:17px 38px">↓ 下載粵語配音台</a>
+      <p class="platforms" id="dlMeta">正在讀取最新版本…</p>
+
+      <div class="dl-steps">
+        <div class="dstep"><div class="n">STEP 1</div><p>下載 zip，<b>解壓到一個資料夾</b>。四個檔案要擺埋一齊。</p></div>
+        <div class="dstep"><div class="n">STEP 2</div><p>雙擊 <b>launch.bat</b>（Windows）或 <b>launch.command</b>（Mac），瀏覽器自動開。</p></div>
+        <div class="dstep"><div class="n">STEP 3</div><p>撳右上「設定」填 API 金鑰，跟住拖檔入去。<b>使用說明書</b>喺 zip 入面。</p></div>
+      </div>
+
+      <div class="req">
+        <span class="tag">要準備</span>
+        <p>程式要 <b>Python 3</b> 同 <b>ffmpeg</b> 先行到（做 API 代理、影片合成、字幕燒錄）。Mac 通常已有 Python；ffmpeg 用 <b>Homebrew</b> 裝。Windows 兩樣都要裝，說明書有逐步教學。另外要自備 API 金鑰——Azure 有免費層，一個月做到約十五集節目。</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p><b style="color:var(--ink-dim);font-weight:500">粵語配音台</b> · 香港製 · 本機工具，非雲端服務</p>
+    <p style="margin-top:8px">程式碼同版本託管喺 <a id="ghLink" href="#" target="_blank" rel="noopener">GitHub</a>。金鑰只留喺你部機。</p>
+  </footer>
+
+</div>
+
+<script>
+  /* ══ 設定：改呢兩行就得 ══ */
+  const GH_USER = 'wongsir1011';
+  const GH_REPO = 'cantonese-dubbing-desk';
+  /* 下載掣連去 GitHub Releases 最新版嘅 zip 資產。
+     未有 release 時 fallback 去 releases 頁，唔會撳死。 */
+
+  const ghBase = `https://github.com/${GH_USER}/${GH_REPO}`;
+  document.getElementById('ghLink').href = ghBase;
+
+  // 波形：生成隨機高度嘅 bar
+  function fillWave(el, cls){
+    const n = 64;
+    for(let i=0;i<n;i++){
+      const s=document.createElement('span');
+      if(cls==='dub'){
+        const h=25+Math.abs(Math.sin(i*0.5))*70+Math.random()*20;
+        s.style.height=Math.min(100,h)+'%';
+        s.style.animationDelay=(i*0.03)+'s';
+      }
+      el.appendChild(s);
+    }
+  }
+  fillWave(document.getElementById('waveSrc'),'src');
+  fillWave(document.getElementById('waveDub'),'dub');
+
+  // 讀 GitHub 最新 release，填下載連結同版本
+  const dlBtn=document.getElementById('dlBtn');
+  const dlMeta=document.getElementById('dlMeta');
+  const verline=document.getElementById('verline');
+  dlBtn.href = `${ghBase}/releases/latest`;   // 預設 fallback
+
+  fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/releases/latest`)
+    .then(r=>r.ok?r.json():Promise.reject(r.status))
+    .then(rel=>{
+      const asset=(rel.assets||[]).find(a=>/\.zip$/i.test(a.name));
+      if(asset){
+        dlBtn.href=asset.browser_download_url;
+        const mb=(asset.size/1048576).toFixed(1);
+        dlMeta.textContent=`${asset.name} · ${mb} MB · ${rel.tag_name||''}`;
+      }else{
+        dlBtn.href=`${ghBase}/releases/latest`;
+        dlMeta.textContent='去 GitHub 下載最新版';
+      }
+      if(rel.tag_name) verline.textContent=`最新版本 · ${rel.tag_name}`;
+    })
+    .catch(()=>{
+      // 未 publish release，或者 API 限速：連去 releases 頁
+      dlBtn.href=`${ghBase}/releases`;
+      dlMeta.textContent='去 GitHub Releases 頁下載';
+    });
+
+  // 捲入淡入（唔支援 IntersectionObserver 就直接顯示，唔會白屏）
+  if('IntersectionObserver' in window){
+    const io=new IntersectionObserver(es=>{
+      es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}});
+    },{threshold:.12});
+    document.querySelectorAll('section').forEach(s=>{s.classList.add('fade');io.observe(s)});
+  }
+</script>
+</body>
+</html>
