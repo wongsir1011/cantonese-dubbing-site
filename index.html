@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>粵語配音台 · 普通話節目轉廣東話配音</title>
-<meta name="description" content="本機單頁工具：將普通話 podcast、影片轉成一男一女廣東話配音，附繁體字幕。拖檔、轉錄、翻譯、校對、合成，一條龍喺你部機完成。">
+<title>粵語配音台 · 任何語言轉廣東話配音</title>
+<meta name="description" content="本機單頁工具：將任何語言嘅 podcast、影片轉成一男一女廣東話配音，附字幕。拖檔、轉錄、翻譯、校對、合成，一條龍喺你部機完成。">
 <meta property="og:title" content="粵語配音台">
-<meta property="og:description" content="普通話節目 → 廣東話配音 + 繁體字幕。本機運行，金鑰唔出你部機。">
+<meta property="og:description" content="任何語言節目 → 廣東話配音 + 字幕。本機運行，金鑰唔出你部機。">
 <meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -81,7 +81,7 @@
   .lede{max-width:620px;margin:30px auto 0;font-size:18px;color:var(--ink-dim);line-height:1.75}
   .lede b{color:var(--ink);font-weight:500}
 
-  /* 波形：普通話直線 → 廣東話配音 */
+  /* 波形：源語言直線 → 廣東話配音 */
   .console-strip{max-width:760px;margin:44px auto 0;background:var(--console-2);
     border:1px solid var(--edge);border-radius:var(--radius);padding:20px 22px;
     box-shadow:0 26px 60px -30px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,255,255,.03)}
@@ -205,18 +205,18 @@
 
   <!-- HERO -->
   <div class="hero">
-    <div class="kicker">Mandarin → Cantonese · Local dubbing console</div>
+    <div class="kicker">Any language → Cantonese · Local dubbing console</div>
     <h1>
-      <span class="zh">普通話入</span>
+      <span class="zh">任何語言入</span>
       <span class="zh">廣東話出</span>
       <span class="en">Cantonese Dubbing Desk</span>
     </h1>
-    <p class="lede">將普通話 podcast、訪談、影片，轉成<b>一男一女廣東話配音</b>，附繁體字幕。轉錄、翻譯、校對、合成，一條龍喺<b>你自己部機</b>行晒。</p>
+    <p class="lede">將<b>任何語言</b>嘅 podcast、訪談、影片，轉成<b>一男一女廣東話配音</b>，附字幕。轉錄、翻譯、校對、合成，一條龍喺<b>你自己部機</b>行晒。</p>
 
     <!-- 訊號鏈波形 -->
     <div class="console-strip" aria-hidden="true">
       <div class="track">
-        <div class="tlabel">IN<b>普通話</b></div>
+        <div class="tlabel">IN<b>任何語言</b></div>
         <div class="wave src" id="waveSrc"></div>
       </div>
       <div class="arrow-row"><span>↓ 轉錄 · 翻譯 · 合成 ↓</span></div>
@@ -240,10 +240,10 @@
     <p class="sub">同錄音室嘅工序一樣：聲入嚟，逐站處理，最後配音出去。中間留返個校對站俾你把關。</p>
     <div class="chain">
       <div class="stage"><span class="led"></span><div class="no">01</div><h3>拖檔入嚟</h3><p>音檔或者影片拖入去。長片會自動切段送去轉錄。</p></div>
-      <div class="stage"><span class="led"></span><div class="no">02</div><h3>轉錄分講者</h3><p>Azure、ElevenLabs、Gemini 三揀一，普通話轉文字兼分開男女講者。</p></div>
+      <div class="stage"><span class="led"></span><div class="no">02</div><h3>轉錄分講者</h3><p>Azure、ElevenLabs、Gemini 三揀一，轉文字兼分開男女講者。源語言自動偵測，或者自己指定。</p></div>
       <div class="stage"><span class="led"></span><div class="no">03</div><h3>翻譯做粵語</h3><p>AI 譯成廣東話口語，唔係硬繃繃嘅書面翻譯。五種語氣可揀。</p></div>
       <div class="stage"><span class="led"></span><div class="no">04</div><h3>你嚟校對</h3><p>紅黃標記提你邊句未譯、邊句太書面。改啱先落一步。</p></div>
-      <div class="stage"><span class="led"></span><div class="no">05</div><h3>合成配音</h3><p>男女聲分開合成，對齊時間軸。影片仲會燒返繁體字幕。</p></div>
+      <div class="stage"><span class="led"></span><div class="no">05</div><h3>合成配音</h3><p>男女聲分開合成，對齊時間軸。Azure 或者 Chirp 3: HD 三十把粵語聲任揀。影片仲會燒返字幕。</p></div>
     </div>
   </section>
 
@@ -287,7 +287,7 @@
       <p class="platforms" id="dlMeta">正在讀取最新版本…</p>
 
       <div class="dl-steps">
-        <div class="dstep"><div class="n">STEP 1</div><p>下載 zip，<b>解壓到一個資料夾</b>。四個檔案要擺埋一齊。</p></div>
+        <div class="dstep"><div class="n">STEP 1</div><p>下載 zip，<b>解壓到一個資料夾</b>。入面所有檔案要擺埋一齊。</p></div>
         <div class="dstep"><div class="n">STEP 2</div><p>雙擊 <b>launch.bat</b>（Windows）或 <b>launch.command</b>（Mac），瀏覽器自動開。</p></div>
         <div class="dstep"><div class="n">STEP 3</div><p>撳右上「設定」填 API 金鑰，跟住拖檔入去。<b>使用說明書</b>喺 zip 入面。</p></div>
       </div>
